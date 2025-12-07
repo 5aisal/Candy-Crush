@@ -12,6 +12,7 @@
 #include <Windows.h>
 #include <fstream>
 #include <chrono>
+#include<ctime>
 using namespace std;
 
 /* ------------ GLOBAL VARIABLES (Minimal) ------------ */
@@ -34,31 +35,22 @@ char hardCandies[7] = {'@', '#', '&', '$', '%', '!', '*'};
 
 void showMenu();
 void instructions();
-
 void startGame(bool mode);
-
 void initializeBoard();
 void displayBoard();
-
 void getSelection(int &r, int &c);
 int getArrow();
-
 void swapCandies(int r,int c,int dr,int dc);
-
 int checkMatches();
 void removeMatches();
 void applyGravity();
 void refillBoard();
 void cascade();
-
 void saveGame();
 bool loadGame();
-
 void saveHighScore();
 void showHighScores();
-
 char randomCandy();
-bool hasInitialMatch(int r,int c);
 
 // ----------------------------------------------
 //                     MAIN
@@ -66,6 +58,7 @@ bool hasInitialMatch(int r,int c);
 
 int main() {
     int choice;
+    srand(time(0));
 
     while (true) {
         system("cls");
@@ -152,8 +145,6 @@ void startGame(bool mode) {
             refillBoard();
             cascade();
         }
-
-        // Timer
         auto now = chrono::steady_clock::now();
         int elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
         if (elapsed >= timeLeft) gameRunning = false;
@@ -170,7 +161,13 @@ void initializeBoard() {
             board[i][j] = randomCandy();
         }
     }
-    // TODO: ensure no initial matches
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            while((i>=2 && board[i][j]==board[i-1][j] && board[i-2][j]==board[i][j]) || (j>=2 && board[i][j]==board[i][j-1] && board[i][j-2]==board[i][j])){
+                board[i][j] = randomCandy();
+            }
+        }
+    }
 }
 
 void displayBoard() {
@@ -211,7 +208,7 @@ int getArrow() {
 
 void swapCandies(int r, int c, int dr, int dc) {
     int nr = r + dr, nc = c + dc;
-    if (nr < 0 || nc < 0 || nr >= boardSize || nc >= boardSize) return;
+    if (nr<0 || nc<0 || nr>=boardSize || nc>=boardSize) return;
 
     char t = board[r][c];
     board[r][c] = board[nr][nc];
@@ -219,8 +216,78 @@ void swapCandies(int r, int c, int dr, int dc) {
 }
 
 int checkMatches() {
-    // TODO: Find horizontal, vertical, L matches
-    return 0;
+    int found = 0;
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            markBoard[i][j] = 0;
+        }
+    }
+    //vertical checks
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            if(i<boardSize-4 && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j] && board[i][j]==board[i+3][j] && board[i][j]==board[i+4][j]){
+                markBoard[i][j]=markBoard[i+1][j]=markBoard[i+2][j]=markBoard[i+3][j]=markBoard[i+4][j]=1;
+                score += 20;
+                found = 1;
+            }
+            else if(i<boardSize-3 && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j] && board[i][j]==board[i+3][j]){
+                markBoard[i][j]=markBoard[i+1][j]=markBoard[i+2][j]=markBoard[i+3][j]=1;
+                score += 15;
+                found = 1;
+            }
+            else if(i<boardSize-2 && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j]){
+                markBoard[i][j]=markBoard[i+1][j]=markBoard[i+2][j]=1;
+                score += 10;
+                found = 1;
+            }
+        }
+    }
+    //horizontal checks
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            if(j<boardSize-4 && board[i][j]==board[i][j+1] && board[i][j]==board[i][j+2] && board[i][j]==board[i][j+3] && board[i][j]==board[i][j+4]){
+                markBoard[i][j]=markBoard[i][j+1]=markBoard[i][j+2]=markBoard[i][j+3]=markBoard[i][j+4]=1;
+                score += 20;
+                found = 1;
+            }
+            else if(j<boardSize-3 && board[i][j]==board[i][j+1] && board[i][j]==board[i][j+2] && board[i][j]==board[i][j+3]){
+                markBoard[i][j]=markBoard[i][j+1]=markBoard[i][j+2]=markBoard[i][j+3]=1;
+                score += 15;
+                found = 1;
+            }
+            else if(j<boardSize-2 && board[i][j]==board[i][j+1] && board[i][j]==board[i][j+2]){
+                markBoard[i][j]=markBoard[i][j+1]=markBoard[i][j+2]=1;
+                score += 10;
+                found = 1;
+            }
+        }
+    }
+    //L checks
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            if(i<boardSize-2 && j<boardSize-2 && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j] && board[i][j]==board[i+2][j+1] && board[i][j]==board[i+2][j+2]){
+                score+=5;
+                found =1;
+                markBoard[i][j]=markBoard[i+1][j]=markBoard[i+2][j]=markBoard[i+2][j+1]=markBoard[i+2][j+2]=1;
+            }
+            else if(i<boardSize-2 && j<boardSize-2 && board[i][j]==board[i][j+1] && board[i][j]==board[i][j+2] && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j]){
+                score+=5;
+                found = 1;
+                markBoard[i][j]=markBoard[i][j+1]=markBoard[i][j+2]=markBoard[i+1][j]=markBoard[i+2][j]=1;
+            }
+            else if(i<boardSize-2 && j>1 && board[i][j]==board[i][j-1] && board[i][j]==board[i][j-2] && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j]){
+                score+=5;
+                found = 1;
+                markBoard[i][j]=markBoard[i][j-1]=markBoard[i][j-2]=markBoard[i+1][j]=markBoard[i+2][j]=1;
+            }
+            else if(i<boardSize-2 && j>1 && board[i][j]==board[i+1][j] && board[i][j]==board[i+2][j] && board[i][j]==board[i+2][j-1] && board[i][j]==board[i+2][j-2]){
+                score+=5;
+                found = 1;
+                markBoard[i][j]=markBoard[i+1][j]=markBoard[i+2][j]=markBoard[i+2][j-1]=markBoard[i+2][j-2]=1;
+            }
+        }
+    }
+    return found;
 }
 
 void removeMatches() {
@@ -241,27 +308,96 @@ void cascade() {
 
 void saveGame() {
     // TODO: save board, time, score to file
+    ofstream save("saved.txt");
+    if(!save.is_open()){
+        cout << "error saving game";
+        return;
+    }
+    save << score << " " << timeLeft << " " << boardSize << " " << hardMode << endl;
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            save << board[i][j] << " ";
+        }
+        save << endl;
+    }
+    save.close();
+    cout << "game saved successfully\n";
 }
 
 bool loadGame() {
     // TODO: load board and details from file
-    return false;
+    ifstream load("saved.txt");
+    if(!load.is_open()){
+        return false;
+    }
+    load >> score >> timeLeft >> boardSize >> hardMode;
+    for(int i=0 ; i<boardSize ; i++){
+        for(int j=0 ; j<boardSize ; j++){
+            load >> board[i][j];
+        }
+    }
+    load.close();
+    cout << "game loaded successfully\n";
+    return true;
 }
 
 void saveHighScore() {
-    // TODO: ask name and save top 10 scores
+    //ask name and save top 10 scores
+    cout << "enter your name : ";
+    string n;
+    cin>>n;
+    string name[11];
+    int scores[11];
+    scores[0] = score;
+    name[0] = n;
+    ifstream read("scores.txt");
+    for(int i=1 ; i<11 ; i++){
+        if(read.eof()) name[i] = "", scores[i] = 0;
+        else read >> name[i] >> scores[i];
+    }
+    read.close();
+    for(int i=1 ; i<11 ; i++){
+        int key = scores[i];
+        int j = i-1;
+        while(j>=0 && scores[j]<key){
+            scores[j+1] = scores[j];
+            name[j+1] = name[j];
+            j--;
+        }
+        scores[j+1] = key;
+        name[j+1] = name[i];
+    }
+    ofstream write("scores.txt");
+    for(int i=0 ; i<10 ; i++){
+        write << name[i] << " " << scores[i] << endl;
+    }
+    write.close();
+    cout << "scores updated successfully\n";
 }
 
 void showHighScores() {
-    // TODO: show highestScore.txt
+    //show scores.txt
+    ifstream read("scores.txt");
+    if(!read.is_open()){
+        cout<< "No Highscores saved yet.\n";
+        return ;
+    }
+    cout << "======= HIGH SCORES =======";
+    string name;
+    int scr;
+    int count=1;
+    cout << "\nRANK\tNAME\tSCORE";
+    while(!read.eof()){
+        read >> name >> scr;
+        if(read.fail()) break;
+        cout << count << "\t" << name << "\t" << scr << endl;
+        count++;
+    }
+    cout << endl;
+    read.close();
 }
 
 char randomCandy() {
-    if (hardMode) return hardCandies[rand() % 7];
+    if (hardMode == true) return hardCandies[rand() % 7];
     return easyCandies[rand() % 5];
-}
-
-bool hasInitialMatch(int r, int c) {
-    // TODO: prevent starting matches
-    return false;
 }
