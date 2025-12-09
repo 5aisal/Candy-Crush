@@ -53,7 +53,7 @@ void showHighScores();
 char randomCandy();
 
 // ----------------------------------------------
-//                     MAIN
+//                      MAIN
 // ----------------------------------------------
 
 int main() {
@@ -85,7 +85,7 @@ int main() {
     return 0;
 }
 
-/* ------------ FUNCTION DEFINITIONS (TODO) ------------ */
+/* ------------ FUNCTION DEFINITIONS ------------ */
 
 void showMenu() {
     cout << "\n================ CANDY CRUSH =================\n";
@@ -144,7 +144,10 @@ void startGame(bool mode) {
             applyGravity();
             refillBoard();
             cascade();
+        } else {
+             swapCandies(r, c, dr, dc); // swap back if no match
         }
+
         auto now = chrono::steady_clock::now();
         int elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
         if (elapsed >= timeLeft) gameRunning = false;
@@ -195,7 +198,9 @@ void getSelection(int &r, int &c) {
         r = -1; c = -1;
         return;
     } else {
-        cin >> r >> c;
+        cout << ch; 
+        r = ch - '0';
+        cin >> c;
     }
 }
 
@@ -291,23 +296,58 @@ int checkMatches() {
 }
 
 void removeMatches() {
-    // TODO: mark blank
+    for (int i = 0; i < boardSize; i++) {
+        for (int j = 0; j < boardSize; j++) {
+            if (markBoard[i][j] == 1) {
+                board[i][j] = ' ';
+                markBoard[i][j] = 0;
+            }
+        }
+    }
 }
 
 void applyGravity() {
-    // TODO: candies fall
+    for (int j = 0; j < boardSize; j++) {
+        for (int i = boardSize - 1; i >= 0; i--) {
+            if (board[i][j] == ' ') {
+                int k = i - 1;
+                while (k >= 0 && board[k][j] == ' ') {
+                    k--;
+                }
+                if (k >= 0) {
+                    board[i][j] = board[k][j];
+                    board[k][j] = ' ';
+                }
+            }
+        }
+    }
 }
 
 void refillBoard() {
-    // TODO: add new candies
+    for (int i = 0; i < boardSize; i++) {
+        for (int j = 0; j < boardSize; j++) {
+            if (board[i][j] == ' ') {
+                board[i][j] = randomCandy();
+            }
+        }
+    }
 }
 
 void cascade() {
-    // TODO: repeat until no more matches
+    while (checkMatches() > 0) {
+        removeMatches();
+        Sleep(200);
+        displayBoard();
+        applyGravity();
+        Sleep(200);
+        displayBoard();
+        refillBoard();
+        Sleep(200);
+        displayBoard();
+    }
 }
 
 void saveGame() {
-    // TODO: save board, time, score to file
     ofstream save("saved.txt");
     if(!save.is_open()){
         cout << "error saving game";
@@ -325,7 +365,6 @@ void saveGame() {
 }
 
 bool loadGame() {
-    // TODO: load board and details from file
     ifstream load("saved.txt");
     if(!load.is_open()){
         return false;
@@ -342,7 +381,6 @@ bool loadGame() {
 }
 
 void saveHighScore() {
-    //ask name and save top 10 scores
     cout << "enter your name : ";
     string n;
     cin>>n;
@@ -352,12 +390,13 @@ void saveHighScore() {
     name[0] = n;
     ifstream read("scores.txt");
     for(int i=1 ; i<11 ; i++){
-        if(read.eof()) name[i] = "", scores[i] = 0;
+        if(read.eof()) { name[i] = ""; scores[i] = 0; }
         else read >> name[i] >> scores[i];
     }
     read.close();
     for(int i=1 ; i<11 ; i++){
         int key = scores[i];
+        string nm = name[i];
         int j = i-1;
         while(j>=0 && scores[j]<key){
             scores[j+1] = scores[j];
@@ -365,18 +404,18 @@ void saveHighScore() {
             j--;
         }
         scores[j+1] = key;
-        name[j+1] = name[i];
+        name[j+1] = nm;
     }
     ofstream write("scores.txt");
     for(int i=0 ; i<10 ; i++){
-        write << name[i] << " " << scores[i] << endl;
+        if (scores[i] != 0)
+            write << name[i] << " " << scores[i] << endl;
     }
     write.close();
     cout << "scores updated successfully\n";
 }
 
 void showHighScores() {
-    //show scores.txt
     ifstream read("scores.txt");
     if(!read.is_open()){
         cout<< "No Highscores saved yet.\n";
@@ -390,8 +429,9 @@ void showHighScores() {
     while(!read.eof()){
         read >> name >> scr;
         if(read.fail()) break;
-        cout << count << "\t" << name << "\t" << scr << endl;
+        cout << endl << count << "\t" << name << "\t" << scr;
         count++;
+        if (count > 10) break;
     }
     cout << endl;
     read.close();
