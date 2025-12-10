@@ -1,21 +1,19 @@
 /******************************************************
    PF PROJECT - CANDY CRUSH GAME
-   Simple Console Pipeline
-   - No vectors
-   - Simple arrays
-   - Easy logic structure
-   - All required features included
+    Faisal Shahzad 25F-0619
+    Asmad Nadeem 25F-0537
 *******************************************************/
 
 #include <iostream>
 #include <conio.h>
+#include <string>
 #include <Windows.h>
 #include <fstream>
 #include <chrono>
-#include<ctime>
+#include <ctime>
 using namespace std;
 
-/* ------------ GLOBAL VARIABLES (Minimal) ------------ */
+/* ------------ GLOBAL VARIABLES ------------ */
 
 const int MAX = 10;
 
@@ -31,7 +29,7 @@ bool gameRunning = false;
 char easyCandies[5] = {'@', '#', '&', '$', '%'};
 char hardCandies[7] = {'@', '#', '&', '$', '%', '!', '*'};
 
-/* ------------ FUNCTION PROTOTYPES ------------ */
+// FUNCTION PROTOTYPEs
 
 void showMenu();
 void instructions();
@@ -51,6 +49,7 @@ bool loadGame();
 void saveHighScore();
 void showHighScores();
 char randomCandy();
+string formatTime(int seconds);
 
 // ----------------------------------------------
 //                      MAIN
@@ -68,8 +67,53 @@ int main() {
         if (choice == 1) startGame(false);
         else if (choice == 2) startGame(true);
         else if (choice == 3) {
-            if (!loadGame()) cout << "\nNo saved game found.\n";
-            system("pause");
+            if (!loadGame()){
+                cout << "\nNo saved game found.\n";
+                system("pause");
+            }
+            else {
+                gameRunning = true;
+                auto start = chrono::steady_clock::now();
+                
+                while (gameRunning) {
+                    displayBoard();
+                    
+                    int r, c;
+                    getSelection(r, c);
+                    
+                    if (r == -1) {
+                        saveGame();
+                        break;
+                    }
+                    
+                    int arrow = getArrow();
+                    
+                    int dr = 0, dc = 0;
+                    if (arrow == 72) dr = -1;
+                    if (arrow == 80) dr = 1;
+                    if (arrow == 75) dc = -1;
+                    if (arrow == 77) dc = 1;
+                    
+                    swapCandies(r, c, dr, dc);
+                    
+                    if (checkMatches() > 0) {
+                        removeMatches();
+                        applyGravity();
+                        refillBoard();
+                        cascade();
+                    } else {
+                        swapCandies(r, c, dr, dc);
+                    }
+                    
+                    auto now = chrono::steady_clock::now();
+                    int elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
+                    if (elapsed >= timeLeft) gameRunning = false;
+                }
+                
+                cout << "\nGame Over! Score: " << score << endl;
+                saveHighScore();
+                system("pause");
+            }
         }
         else if (choice == 4) {
             showHighScores();
@@ -85,7 +129,7 @@ int main() {
     return 0;
 }
 
-/* ------------ FUNCTION DEFINITIONS ------------ */
+// ------------ FUNCTION DEFINITIONS ------------
 
 void showMenu() {
     cout << "\n================ CANDY CRUSH =================\n";
@@ -105,7 +149,7 @@ void instructions() {
     cout << "Match 3 or more candies to score.\n";
     cout << "Press P to pause and save.\n";
 }
-
+//main game logic
 void startGame(bool mode) {
     hardMode = mode;
     boardSize = hardMode ? 10 : 8;
@@ -128,6 +172,11 @@ void startGame(bool mode) {
             saveGame();
             break;
         }
+        else if(r == -2){
+            cout << "\tinvalid input try again!";
+            Sleep(300);
+            continue;
+        }
 
         int arrow = getArrow();
 
@@ -145,19 +194,22 @@ void startGame(bool mode) {
             refillBoard();
             cascade();
         } else {
-             swapCandies(r, c, dr, dc); // swap back if no match
+            cout << "no matches found\n";
+            Sleep(500);
+            swapCandies(r, c, dr, dc);
         }
 
         auto now = chrono::steady_clock::now();
         int elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
-        if (elapsed >= timeLeft) gameRunning = false;
+        timeLeft = (hardMode ? 40 : 60) - elapsed;
+        if (timeLeft <= 0) gameRunning = false;
     }
 
     cout << "\nGame Over! Score: " << score << endl;
     saveHighScore();
     system("pause");
 }
-
+//initialize main board without intitializing consecutive three or more candies
 void initializeBoard() {
     for (int i = 0; i < boardSize; i++) {
         for (int j = 0; j < boardSize; j++) {
@@ -172,10 +224,10 @@ void initializeBoard() {
         }
     }
 }
-
+//display board
 void displayBoard() {
     system("cls");
-    cout << "\nScore: " << score << "\nTimeLeft: " << timeLeft << endl;
+    cout << "\nScore: " << score << "\nTime Left: " << formatTime(timeLeft) << "s" << endl;
 
     cout << "   ";
     for (int c = 0; c < boardSize; c++) cout << c <<" ";
@@ -191,23 +243,26 @@ void displayBoard() {
 }
 
 void getSelection(int &r, int &c) {
-    cout << "Row Col (P to pause): ";
-    char ch = _getch();
-
-    if (ch == 'P' || ch == 'p') {
-        r = -1; c = -1;
-        return;
-    } else {
-        cout << ch; 
-        r = ch - '0';
-        cin >> c;
-    }
+    string input1="", input2="";
+    cout << "enter row column (p to pause) : ";
+    cin >> input1;
+    if(input1 == "p" || input1 == "P"){c=-1; r=-1; return;}
+    cin >> input2;
+    if(input1 == "" || input2 == ""){c=-2; r=-2; return;}
+    r = input1[0]-'0';
+    c = input2[0]-'0';
+    if(r < 0 || r>=boardSize || c<0 || c >= boardSize){r=-2; c=-2; return;}
 }
 
 int getArrow() {
+    cout << "Use arrow keys to swap: ";
     while (true) {
         int k = _getch();
-        if (k == 224) return _getch();
+        if (k == 224 || k == 0) {
+            int arrow = _getch();
+            cout << "Direction selected!\n";
+            return arrow;
+        }
     }
 }
 
@@ -219,8 +274,9 @@ void swapCandies(int r, int c, int dr, int dc) {
     board[r][c] = board[nr][nc];
     board[nr][nc] = t;
 }
-
+//check for any match
 int checkMatches() {
+    void displayBoard();
     int found = 0;
     for(int i=0 ; i<boardSize ; i++){
         for(int j=0 ; j<boardSize ; j++){
@@ -304,6 +360,7 @@ void removeMatches() {
             }
         }
     }
+    Sleep(300);
 }
 
 void applyGravity() {
@@ -321,6 +378,7 @@ void applyGravity() {
             }
         }
     }
+    Sleep(200);
 }
 
 void refillBoard() {
@@ -332,17 +390,17 @@ void refillBoard() {
         }
     }
 }
-
+// cascade effect to give animations
 void cascade() {
     while (checkMatches() > 0) {
         removeMatches();
-        Sleep(200);
+        Sleep(600);
         displayBoard();
         applyGravity();
-        Sleep(200);
+        Sleep(500);
         displayBoard();
         refillBoard();
-        Sleep(200);
+        Sleep(500);
         displayBoard();
     }
 }
@@ -377,15 +435,20 @@ bool loadGame() {
     }
     load.close();
     cout << "game loaded successfully\n";
+    system("pause");
     return true;
 }
 
 void saveHighScore() {
     cout << "enter your name : ";
     string n;
-    cin>>n;
+    cin >> n;
     string name[11];
     int scores[11];
+    for(int i = 1; i < 11; i++) { 
+        name[i] = ""; 
+        scores[i] = 0; 
+    }
     scores[0] = score;
     name[0] = n;
     ifstream read("scores.txt");
@@ -394,7 +457,7 @@ void saveHighScore() {
         else read >> name[i] >> scores[i];
     }
     read.close();
-    for(int i=1 ; i<11 ; i++){
+    for(int i=0 ; i<11 ; i++){
         int key = scores[i];
         string nm = name[i];
         int j = i-1;
@@ -421,7 +484,7 @@ void showHighScores() {
         cout<< "No Highscores saved yet.\n";
         return ;
     }
-    cout << "======= HIGH SCORES =======";
+    cout << "\n======= HIGH SCORES =======";
     string name;
     int scr;
     int count=1;
@@ -436,8 +499,17 @@ void showHighScores() {
     cout << endl;
     read.close();
 }
-
+//initialize random candies
 char randomCandy() {
     if (hardMode == true) return hardCandies[rand() % 7];
     return easyCandies[rand() % 5];
+}
+//format time in MM:SS
+string formatTime(int seconds) {
+    int mins = seconds / 60;
+    int secs = seconds % 60;
+    string result = to_string(mins) + ":";
+    if (secs < 10) result += "0";
+    result += to_string(secs);
+    return result;
 }
