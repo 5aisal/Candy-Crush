@@ -13,7 +13,7 @@
 #include <ctime>
 using namespace std;
 
-/* ------------ GLOBAL VARIABLES ------------ */
+//GLOBAL VARIABLES
 
 const int MAX = 10;
 
@@ -33,6 +33,7 @@ char hardCandies[7] = {'@', '#', '&', '$', '%', '!', '*'};
 
 void showMenu();
 void instructions();
+void setC(int color);
 void startGame(bool mode);
 void initializeBoard();
 void displayBoard();
@@ -129,9 +130,15 @@ int main() {
     return 0;
 }
 
-// ------------ FUNCTION DEFINITIONS ------------
+// FUNCTION DEFINITIONS
+
+void setC(int color) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, color);
+}
 
 void showMenu() {
+    setC(10);
     cout << "\n================ CANDY CRUSH =================\n";
     cout << "1. Easy Mode (8x8)\n";
     cout << "2. Hard Mode (10x10)\n";
@@ -143,6 +150,7 @@ void showMenu() {
 }
 
 void instructions() {
+    setC(10);
     cout << "\nHow To Play:\n";
     cout << "Select row and column.\n";
     cout << "Use arrow keys to swap.\n";
@@ -227,15 +235,25 @@ void initializeBoard() {
 //display board
 void displayBoard() {
     system("cls");
+    setC(2);
     cout << "\nScore: " << score << "\nTime Left: " << formatTime(timeLeft) << "s" << endl;
 
     cout << "   ";
+    setC(2);
     for (int c = 0; c < boardSize; c++) cout << c <<" ";
     cout << endl;
 
     for (int r = 0; r < boardSize; r++) {
+        setC(2);
         cout << r <<"  ";
         for (int c = 0; c < boardSize; c++) {
+            if(board[r][c]=='%') setC(4);
+            else if(board[r][c] == '#') setC(5);
+            else if(board[r][c] == '@') setC(1);
+            else if(board[r][c] == '&') setC(3);
+            else if(board[r][c] == '$') setC(6);
+            else if(board[r][c] == '!') setC(12);
+            else if(board[r][c] == '*') setC(15);
             cout << board[r][c] << " ";
         }
         cout << endl;
@@ -244,6 +262,7 @@ void displayBoard() {
 
 void getSelection(int &r, int &c) {
     string input1="", input2="";
+    setC(2);
     cout << "enter row column (p to pause) : ";
     cin >> input1;
     if(input1 == "p" || input1 == "P"){c=-1; r=-1; return;}
