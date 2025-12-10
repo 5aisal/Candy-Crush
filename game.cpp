@@ -164,19 +164,21 @@ void startGame(bool mode) {
     timeLeft = hardMode ? 40 : 60;
     score = 0;
     gameRunning = true;
-
+    //initialize the main board
     initializeBoard();
 
     auto start = chrono::steady_clock::now();
 
     while (gameRunning) {
-
+        //display the initialized baord with colors
         displayBoard();
 
         int r, c;
+        //get row and column from user properly
         getSelection(r, c);
 
         if (r == -1) {
+            //save the game
             saveGame();
             break;
         }
@@ -185,7 +187,7 @@ void startGame(bool mode) {
             Sleep(300);
             continue;
         }
-
+        //to get the direction to swap to
         int arrow = getArrow();
 
         int dr = 0, dc = 0;
@@ -193,9 +195,9 @@ void startGame(bool mode) {
         if (arrow == 80) dr = 1;
         if (arrow == 75) dc = -1;
         if (arrow == 77) dc = 1;
-
+        //swap the candies
         swapCandies(r, c, dr, dc);
-
+        //check if the swapped candies check any matches
         if (checkMatches() > 0) {
             removeMatches();
             applyGravity();
@@ -240,12 +242,15 @@ void displayBoard() {
 
     cout << "   ";
     setC(2);
-    for (int c = 0; c < boardSize; c++) cout << c <<" ";
+    cout << "  ";
+    for (int c = 0; c < boardSize; c++) cout << c <<"   ";
     cout << endl;
 
     for (int r = 0; r < boardSize; r++) {
         setC(2);
         cout << r <<"  ";
+        setC(15);
+        cout << "| ";
         for (int c = 0; c < boardSize; c++) {
             if(board[r][c]=='%') setC(4);
             else if(board[r][c] == '#') setC(5);
@@ -254,7 +259,15 @@ void displayBoard() {
             else if(board[r][c] == '$') setC(6);
             else if(board[r][c] == '!') setC(12);
             else if(board[r][c] == '*') setC(15);
-            cout << board[r][c] << " ";
+            cout << board[r][c];
+            setC(15);
+            cout << " | ";
+        }
+        cout << endl;
+        cout << "   ";
+        for(int k=0 ; k<boardSize ; k++){
+            setC(15);
+            cout<<"----";
         }
         cout << endl;
     }
