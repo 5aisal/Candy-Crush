@@ -485,8 +485,7 @@ void saveHighScore() {
     name[0] = n;
     ifstream read("scores.txt");
     for(int i=1 ; i<11 ; i++){
-        if(read.eof()) { name[i] = ""; scores[i] = 0; }
-        else read >> name[i] >> scores[i];
+        if(!(read>>name[i]>>scores[i])) { name[i] = ""; scores[i] = 0; }
     }
     read.close();
     for(int i=0 ; i<11 ; i++){
@@ -520,13 +519,10 @@ void showHighScores() {
     string name;
     int scr;
     int count=1;
-    cout << "\nRANK\tNAME\tSCORE";
-    while(!read.eof()){
-        read >> name >> scr;
-        if(read.fail()) break;
-        cout << endl << count << "\t" << name << "\t" << scr;
+    cout << "\nRANK\tNAME\tSCORE" << endl;
+    while(count<=10 && (read>>name>>scr)){
+        cout << count << "\t" << name << "\t" << scr << endl;
         count++;
-        if (count > 10) break;
     }
     cout << endl;
     read.close();
